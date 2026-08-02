@@ -155,15 +155,17 @@ exports.generateReceiptPdf = (rawDonation) => {
         try {
           const rawBuf = await generateDengiPavtiPdf(donation);
           if (rawBuf) return resolve(toBuffer(rawBuf));
+          else return reject(new Error("Dengi Pavti generator returned empty buffer"));
         } catch (e) {
-          console.warn("Puppeteer Dengi Pavti generation failed, falling back to PDFKit engine:", e.message);
+          return reject(e);
         }
       } else if (effectiveType === "shakha_pavti") {
         try {
           const rawBuf = await generateShakhaPavtiPdf(donation);
           if (rawBuf) return resolve(toBuffer(rawBuf));
+          else return reject(new Error("Shakha Pavti generator returned empty buffer"));
         } catch (e) {
-          console.warn("Puppeteer Shakha Pavti generation failed, falling back to PDFKit engine:", e.message);
+          return reject(e);
         }
       } else if (effectiveType === "jama_pavti") {
         try {
@@ -200,14 +202,31 @@ exports.generateReceiptPdf = (rawDonation) => {
           const dateStr = new Date(receiptDate).toLocaleDateString("en-IN", {
             day: "2-digit", month: "2-digit", year: "numeric"
           });
-          const receiptNo = donation.receiptNumber || donation.donationReference || `REC-${Date.now().toString().slice(-6)}`;
+                      const receiptNo = donation.receiptNumber || donation.donationReference || donation.transactionId || `REC-${(donation._id || Date.now()).toString().slice(-6).toUpperCase()}`;
+            
+            // Translations
+            const donorName = donation.donorName || donation.name || '';
+            const address = donation.address || '';
+            const purpose = donation.message || donation.donationType || donation.category || 'Donation';
+            
+            const donorNameMarathi = await transliterateToMarathi(donorName);
+            const addressMarathi = await transliterateToMarathi(address);
+            const purposeMarathi = await translateToMarathi(purpose);
+            
+            const amountMarathi = convertNumberToMarathiWords(donation.amount || 0);
+            const amountEnglish = convertNumberToEnglishWords(donation.amount || 0);
+            
+            const bilingualDonation = {
+              ...donation,
+              donationType: 'jama_pavti',
+              donorName: `${donorName} / ${donorNameMarathi}`,
+              address: `${address} / ${addressMarathi}`,
+              purpose: `${purpose} / ${purposeMarathi}`
+            };
 
-          const amountMarathi = convertNumberToMarathiWords(donation.amount || 0);
-          const amountEnglish = convertNumberToEnglishWords(donation.amount || 0);
-
-          drawJamaPavti({
-            doc,
-            donation: { ...donation, donationType: 'jama_pavti' },
+            drawJamaPavti({
+              doc,
+              donation: bilingualDonation,
             copyTitle: null,
             yOffset: 0,
             logoPath,
@@ -223,127 +242,11 @@ exports.generateReceiptPdf = (rawDonation) => {
           doc.end();
           return;
         } catch (e) {
-          console.warn("Jama Pavti generation failed, falling back to default PDFKit engine:", e.message);
+          return reject(e);
         }
       }
 
-      const formatBilingual = async (text) => {
-        if (!text) return text;
-        const marathiText = await translateToMarathi(text);
-        return (marathiText.trim() === text.trim()) ? text : `${marathiText} / ${text}`;
-      };
-
-      const formatBilingualTransliterate = async (text) => {
-        if (!text) return text;
-        const marathiText = await transliterateToMarathi(text);
-        return (marathiText.trim() === text.trim()) ? text : `${marathiText} / ${text}`;
-      };
-
-      // Async Marathi Conversions
-      if (donation.donorName) donation.donorName = await formatBilingualTransliterate(donation.donorName);
-      else if (donation.name) donation.name = await formatBilingualTransliterate(donation.name);
-      
-      if (donation.address) donation.address = await formatBilingual(donation.address);
-      if (donation.message) donation.message = await formatBilingual(donation.message);
-      if (donation.annadaanType) donation.annadaanType = await formatBilingual(donation.annadaanType);
-      
-      // Payment methods can remain transliterated to avoid weird translations
-      if (donation.paymentApp) donation.paymentApp = await transliterateToMarathi(donation.paymentApp);
-      else if (donation.paymentMethod) donation.paymentMethod = await transliterateToMarathi(donation.paymentMethod);
-
-      const isJamaPavti = donation.donationType === "jama_pavti";
-      const doc = new PDFDocument({ 
-        margin: 20, 
-        size: isJamaPavti ? [595.28, 440] : "A4",
-        info: { Title: isJamaPavti ? 'Jama Pavati' : 'Receipt' }
-      });
-      const buffers = [];
-
-      doc.on("data", (chunk) => buffers.push(chunk));
-      doc.on("end", () => resolve(Buffer.concat(buffers)));
-      doc.on("error", (err) => reject(err));
-
-      const redColor = "#680000";
-      const orangeColor = "#b83b1b";
-      const lightOrangeColor = "#e67e22";
-
-      // Font Paths
-      const fontRegularPath = path.join(__dirname, '../assets/fonts/Mangal-Regular.ttf');
-      const fontBoldPath = path.join(__dirname, '../assets/fonts/Mangal-Bold.ttf');
-
-      // Register fonts if available
-      if (fs.existsSync(fontRegularPath)) {
-        doc.registerFont('Poppins', fontRegularPath);
-      }
-      if (fs.existsSync(fontBoldPath)) {
-        doc.registerFont('Poppins-Bold', fontBoldPath);
-      }
-
-      const setRegularFont = (size) => {
-        if (fs.existsSync(fontRegularPath)) {
-          doc.font('Poppins').fontSize(size);
-        } else {
-          doc.font('Helvetica').fontSize(size);
-        }
-      };
-
-      const setBoldFont = (size) => {
-        if (fs.existsSync(fontBoldPath)) {
-          doc.font('Poppins-Bold').fontSize(size);
-        } else {
-          doc.font('Helvetica-Bold').fontSize(size);
-        }
-      };
-
-      const logoPath = path.join(__dirname, '../../frontend/public/logo.png');
-      const swamijiPath = path.join(__dirname, '../../frontend/src/assets/kolekar_SP_1.jpeg');
-
-      // Format Date & Receipt No
-      const receiptDate = donation.approvalDate || donation.date || Date.now();
-      const dateStr = new Date(receiptDate).toLocaleDateString("en-IN", {
-        day: "2-digit", month: "2-digit", year: "numeric"
-      });
-      const receiptNo = donation.receiptNumber || donation.donationReference || `REC-${Date.now().toString().slice(-6)}`;
-
-      // Generate words
-      const amountMarathi = convertNumberToMarathiWords(donation.amount || 0);
-      const amountEnglish = convertNumberToEnglishWords(donation.amount || 0);
-
-      // Prepare context for the separated template files
-      const ctx = {
-        doc, donation,
-        logoPath, swamijiPath, receiptNo, dateStr,
-        amountMarathi, amountEnglish,
-        setBoldFont, setRegularFont,
-        redColor, orangeColor, lightOrangeColor
-      };
-
-      const drawReceiptTemplate = (yOffset, copyTitle) => {
-        ctx.yOffset = yOffset;
-        ctx.copyTitle = copyTitle;
-        drawJamaPavti(ctx);
-      };
-
-      if (isJamaPavti) {
-        // Draw Single Copy
-        drawReceiptTemplate(15, ""); // No subtitle needed as per physical copy format
-      } else {
-        // Draw Top Copy
-        drawReceiptTemplate(15, "भाविकाची प्रत / Devotee's Copy");
-
-        // Draw Middle Divider
-        doc.save();
-        doc.dash(4, { space: 4 }).moveTo(20, 415).lineTo(575, 415).lineWidth(1).strokeColor('gray').stroke();
-        doc.restore();
-
-        setRegularFont(6.5);
-        doc.fillColor('gray').text("✂ कापण्यासाठी / Cut Here -------------------------------------------------------------", 20, 411, { width: 555, align: 'center' });
-
-        // Draw Bottom Copy
-        drawReceiptTemplate(420, "कार्यालयीन प्रत / Office's Copy");
-      }
-
-      doc.end();
+      return reject(new Error("Unknown donation type"));
     } catch (err) {
       reject(err);
     }

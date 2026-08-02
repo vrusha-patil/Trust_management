@@ -40,7 +40,9 @@ const annadaanSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
-  status: {
+  receiptPdfUrl: { type: String, required: false },
+    receiptPublicId: { type: String, required: false },
+    status: {
     type: String,
     enum: ['pending', 'approved', 'completed', 'rejected'],
     default: 'pending'

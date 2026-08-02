@@ -3,7 +3,7 @@ import { getMyDonations, downloadDonationReceipt } from '../../../services/userD
 import { TableSkeleton } from '../../../components/dashboard/LoadingSkeleton';
 import EmptyState from '../../../components/dashboard/EmptyState';
 import StatusBadge from '../../../components/dashboard/StatusBadge';
-import { FaDonate, FaDownload, FaCalendarAlt, FaReceipt, FaCoins, FaInfoCircle } from 'react-icons/fa';
+import { FaDonate, FaDownload, FaCalendarAlt, FaReceipt, FaCoins, FaInfoCircle, FaEye, FaTimes, FaSpinner } from 'react-icons/fa';
 import { FiFilter, FiDownload } from 'react-icons/fi';
 import { toast, Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,6 +16,8 @@ export const MyDonations = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [downloadingId, setDownloadingId] = useState(null);
+  const [viewReceiptModal, setViewReceiptModal] = useState(null);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   
   const [filterYear, setFilterYear] = useState('');
@@ -96,18 +98,32 @@ export const MyDonations = () => {
       </td>
       <td className="px-6 py-4 text-center">
         {d.status === 'APPROVED' ? (
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleDownloadReceipt(d._id, d.donationReference);
-            }}
-            disabled={downloadingId === d._id}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-wait"
-          >
-            <FaDownload size={12} className={downloadingId === d._id ? 'animate-bounce' : ''} />
-            <span>{downloadingId === d._id ? 'Downloading...' : 'Download Receipt'}</span>
-          </button>
+          <div className="flex gap-2 justify-center">
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleViewReceipt(d._id, d.donationReference);
+              }}
+              disabled={downloadingId === d._id + '_view'}
+              className="inline-flex items-center justify-center p-2.5 rounded-full text-sky-600 bg-white border border-slate-200 hover:bg-slate-50 shadow-sm transition-all transform hover:-translate-y-0.5 disabled:opacity-50"
+              title="View Receipt"
+            >
+              <FaEye size={14} className={downloadingId === d._id + '_view' ? 'animate-pulse' : ''} />
+            </button>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleDownloadReceipt(d._id, d.donationReference);
+              }}
+              disabled={downloadingId === d._id}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-wait"
+            >
+              <FaDownload size={12} className={downloadingId === d._id ? 'animate-bounce' : ''} />
+              <span>{downloadingId === d._id ? 'Downloading...' : 'Download Receipt'}</span>
+            </button>
+          </div>
         ) : d.status === 'REJECTED' ? (
           <div className="text-xs font-bold text-red-600 max-w-[150px] mx-auto break-words" title={d.rejectionReason}>
             Reason: {d.rejectionReason || 'Contact support'}
@@ -118,6 +134,33 @@ export const MyDonations = () => {
       </td>
     </tr>
   );
+
+  const handleViewReceipt = async (id, donationRef) => {
+    try {
+      setDownloadingId(id + '_view');
+      const res = await downloadDonationReceipt(id);
+      
+      if (res.data.type === 'text/html' || (typeof res.data.type === 'string' && res.data.type.includes('html'))) {
+        throw new Error("Receipt document not available yet or error generating PDF.");
+      }
+
+      const blob = new Blob([res.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      setPdfBlobUrl(url);
+      setViewReceiptModal(donationRef || id);
+    } catch (err) {
+      console.error("Receipt view error:", err);
+      toast.error(err.message || "Failed to view receipt.");
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const handleCloseModal = () => {
+    if (pdfBlobUrl) window.URL.revokeObjectURL(pdfBlobUrl);
+    setPdfBlobUrl('');
+    setViewReceiptModal(null);
+  };
 
   const handleDownloadReceipt = async (id, donationRef) => {
     try {
@@ -355,6 +398,34 @@ export const MyDonations = () => {
             </div>
           </div>
           
+        </div>
+      )}
+
+      {/* Receipt View Modal */}
+      {viewReceiptModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-gray-100">
+            <div className="p-4 sm:p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/80">
+              <h2 className="text-lg sm:text-xl font-black text-gray-900 flex flex-wrap items-center gap-2">
+                <span>Receipt Preview</span>
+                <span className="text-xs bg-red-100 text-red-700 px-2.5 py-0.5 rounded-full font-bold">{viewReceiptModal}</span>
+              </h2>
+              <button onClick={handleCloseModal} className="p-2 text-gray-400 hover:text-gray-800 rounded-full hover:bg-gray-200 transition">
+                <FaTimes size={20} />
+              </button>
+            </div>
+            <div className="p-3 sm:p-6 flex-grow overflow-hidden flex justify-center items-center bg-gray-100/50 min-h-[550px]">
+              {pdfBlobUrl ? (
+                <iframe
+                  src={pdfBlobUrl}
+                  className="w-full h-[580px] rounded-xl border border-gray-200 shadow-sm bg-white"
+                  title={`Receipt-${viewReceiptModal}`}
+                />
+              ) : (
+                <FaSpinner className="animate-spin text-4xl text-gray-400" />
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

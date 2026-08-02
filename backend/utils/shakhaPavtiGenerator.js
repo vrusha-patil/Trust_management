@@ -1,9 +1,28 @@
-const { getBrowser } = require('./browserManager');
+const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
 const { transliterateToMarathi, translateToMarathi } = require('./translationService');
 
-// Helper to convert number to Marathi words
+function convertNumberToEnglishWords(amount) {
+  if (amount === 0) return "Zero";
+  
+  const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
+  const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+  function inWords (num) {
+      if ((num = num.toString()).length > 9) return 'overflow';
+      let n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+      if (!n) return; let str = '';
+      str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
+      str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
+      str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'Thousand ' : '';
+      str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
+      str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) : '';
+      return str.trim();
+  }
+  return inWords(amount) + " Rupees Only";
+}
+
 function convertNumberToMarathiWords(amount) {
   if (amount === 0) return "शून्य";
   
@@ -11,13 +30,13 @@ function convertNumberToMarathiWords(amount) {
     "", "एक", "दोन", "तीन", "चार", "पाच", "सहा", "सात", "आठ", "नऊ", "दहा",
     "अकरा", "बारा", "तेरा", "चौदा", "पंधरा", "सोळा", "सतरा", "अठरा", "एकोणीस", "वीस",
     "एकवीस", "बावीस", "तेवीस", "चोवीस", "पंचवीस", "सव्वीस", "सत्तावीस", "अठ्ठावीस", "एकोणतीस", "तीस",
-    "एकतीस", "बत्तीस", "तेहतीस", "चौतीस", "पस्तीस", "छत्तीस", "सडतीस", "अडतीस", "एकोणचाळीस", "चाळीस",
-    "एकचाळीस", "बेचाळीस", "तेचाळीस", "चोवेचाळीस", "पंचेचाळीस", "सचेचाळीस", "सत्तेचाळीस", "अठ्ठेचाळीस", "एकोणपन्नास", "पन्नास",
-    "एकपन्न", "बावन", "त्रिपन्न", "चौपन", "पंचावन", "सप्पन", "सत्तावन", "अठ्ठावन", "एकोणसाठ", "साठ",
-    "एकसष्ठ", "बासष्ठ", "त्रेसष्ठ", "चौसष्ठ", "पायसष्ठ", "सहासष्ठ", "सदुसष्ठ", "अडुसष्ठ", "एकोणसत्तर", "सत्तर",
-    "एकहत्तर", "बाहत्तर", "त्र्याहत्तर", "चौऱ्याहत्तर", "पंच्याहत्तर", "शहात्तर", "सत्त्याहत्तर", "अठ्ठ्याहत्तर", "एकोणऐंशी", "ऐंशी",
-    "एक्याऐंशी", "ब्याऐंशी", "त्र्याऐंशी", "चौऱ्याऐंशी", "पंच्याऐंशी", "शहाऐंशी", "सत्त्याऐंशी", "अठ्ठ्याऐंशी", "एकोणनव्वद", "नव्वद",
-    "एक्याण्णव", "ब्याण्णव", "त्र्याण्णव", "चौऱ्याण्णव", "पंच्याण्णव", "शहाण्णव", "सत्त्याण्णव", "अठ्ठ्याण्णव", "नव्याण्णव"
+    "एकतीस", "बत्तीस", "तेहतीस", "चौतीस", "पस्तीस", "छत्तीस", "सदतीस", "अडतीस", "एकोणचाळीस", "चाळीस",
+    "एकेचाळीस", "बेचाळीस", "त्रेचाळीस", "चव्वेचाळीस", "पंचेचाळीस", "शेहेचाळीस", "सत्तेचाळीस", "अठ्ठेचाळीस", "एकोणपन्नास", "पन्नास",
+    "एकावन्न", "बावन्न", "त्रेपन्न", "चोपन्न", "पंचावन्न", "छप्पन्न", "सत्तावन्न", "अठ्ठावन्न", "एकोणसाठ", "साठ",
+    "एकसष्ठ", "बासष्ठ", "त्रेसष्ठ", "चौसष्ठ", "पासष्ठ", "सहासष्ठ", "सदुसष्ठ", "अडुसष्ठ", "एकोणसत्तर", "सत्तर",
+    "एकाहत्तर", "बाहत्तर", "त्र्याहत्तर", "चौऱ्याहत्तर", "पंच्याहत्तर", "शहात्तर", "सत्त्याहत्तर", "अठ्ठ्याहत्तर", "एकोणऐंशी", "ऐंशी",
+    "एक्क्याऐंशी", "ब्याऐंशी", "त्र्याऐंशी", "चौऱ्याऐंशी", "पंच्याऐंशी", "शहाऐंशी", "सत्त्याऐंशी", "अठ्ठ्याऐंशी", "एकोणनव्वद", "नव्वद",
+    "एक्क्याण्णव", "ब्याण्णव", "त्र्याण्णव", "चौऱ्याण्णव", "पंच्याण्णव", "शहाण्णव", "सत्त्याण्णव", "अठ्ठ्याण्णव", "नव्याण्णव"
   ];
 
   let words = "";
@@ -40,19 +59,15 @@ function convertNumberToMarathiWords(amount) {
   if (crores > 0) {
     words += (crores < 100 ? marathiNums[crores] : convertNumberToMarathiWords(crores)) + " कोटी ";
   }
-
   if (lakhs > 0) {
     words += marathiNums[lakhs] + " लाख ";
   }
-
   if (thousands > 0) {
     words += marathiNums[thousands] + " हजार ";
   }
-
   if (hundreds > 0) {
     words += marathiNums[hundreds] + "शे ";
   }
-
   if (remaining > 0) {
     words += marathiNums[remaining] + " ";
   }
@@ -60,39 +75,19 @@ function convertNumberToMarathiWords(amount) {
   return words.trim() + " रुपये फक्त";
 }
 
-function convertNumberToEnglishWords(amount) {
-    if (amount === 0) return "Zero";
-    const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
-    const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-    
-    if (amount < 0) return '';
-    let n = ('000000000' + amount).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
-    if (!n) return ''; 
-    let str = '';
-    str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
-    str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
-    str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'Thousand ' : '';
-    str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
-    str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) : '';
-    return str.trim() + " Rupees Only";
-}
-
-// Helper to split Marathi amount words across two lines
-function splitMarathiWords(words, maxCharLength) {
-  if (!words || words.length <= maxCharLength) {
-    return [words || "", ""];
-  }
-  const parts = words.split(" ");
-  let line1 = "";
-  let line2 = "";
-  for (const part of parts) {
-    if ((line1 + (line1 ? " " : "") + part).length <= maxCharLength) {
-      line1 += (line1 ? " " : "") + part;
-    } else {
-      line2 += (line2 ? " " : "") + part;
+function getBase64Image(filename) {
+  try {
+    const filePath = path.join(__dirname, '../templates/images', filename);
+    if (fs.existsSync(filePath)) {
+      const ext = path.extname(filePath).substring(1) || 'jpeg';
+      const base64 = fs.readFileSync(filePath, { encoding: 'base64' });
+      return `data:image/${ext};base64,${base64}`;
     }
+  } catch (err) {
+    console.error(`Failed to read image ${filename}:`, err);
   }
-  return [line1, line2];
+  // Return empty transparent pixel if missing
+  return 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 }
 
 exports.generateShakhaPavtiPdf = async (rawDonation) => {
@@ -100,88 +95,88 @@ exports.generateShakhaPavtiPdf = async (rawDonation) => {
   try {
     const donation = typeof rawDonation.toObject === 'function' ? rawDonation.toObject() : { ...rawDonation };
 
-    if (donation.address) {
-      donation.address = String(donation.address).replace(/\b\d{10}\b/g, '').trim();
-    }
-
     const receiptDate = donation.approvalDate || donation.date || Date.now();
     const dateStr = new Date(receiptDate).toLocaleDateString("en-IN", {
       day: "2-digit", month: "2-digit", year: "numeric"
     });
     
-    const receiptNo = donation.receiptNumber || donation.donationReference || `SP-${Date.now().toString().slice(-6)}`;
+    const receiptNo = donation.receiptNumber || donation.donationReference || donation.transactionId || `DON-${(donation._id || Date.now()).toString().slice(-6).toUpperCase()}`;
     const donorName = donation.donorName || donation.name || '';
-    const donorNameMarathi = donorName ? await transliterateToMarathi(donorName) : '';
-    const bilingualName = donorName && donorNameMarathi && donorName !== donorNameMarathi ? `${donorNameMarathi} / ${donorName}` : donorName;
+    const address = donation.address || '';
+    const purpose = donation.message || donation.donationType || donation.category || 'Donation';
+    const amount = donation.amount ? donation.amount : 0;
 
-    const purpose = donation.message || donation.annadaanType || "साधारण देणगी";
-    const purposeMarathi = purpose ? await translateToMarathi(purpose) : '';
-    const bilingualPurpose = purpose && purposeMarathi && purpose !== purposeMarathi ? `${purposeMarathi} / ${purpose}` : purpose;
+    // Bilingual translations
+    const donorNameMarathi = await transliterateToMarathi(donorName);
+    const addressMarathi = await transliterateToMarathi(address);
+    const purposeMarathi = await translateToMarathi(purpose);
 
-    const amount = donation.amount ? donation.amount.toLocaleString("en-IN") : "0";
-    const amountMarathi = convertNumberToMarathiWords(donation.amount || 0);
-    const amountEnglish = convertNumberToEnglishWords(donation.amount || 0);
-    const bilingualAmountWords = `${amountMarathi} / ${amountEnglish}`;
+    const amountWordsEng = convertNumberToEnglishWords(amount);
+    const amountWordsMar = convertNumberToMarathiWords(amount);
 
-    const branchName = donation.branchId ? (donation.branchId.name || "कोळे") : "कोळे";
-    const [amountInWords1, amountInWords2] = splitMarathiWords(bilingualAmountWords, 45);
+    const donorNameBilingual = `${donorName} / ${donorNameMarathi}`;
+    const addressBilingual = `${address} / ${addressMarathi}`;
+    const purposeBilingual = `${purpose} / ${purposeMarathi}`;
+    
+    // Split amount words to match the two-line layout if needed, or just combine
+    const amountWordsBilingualFull = `${amountWordsEng} / ${amountWordsMar}`;
+    let amountWordsLine1 = amountWordsBilingualFull;
+    let amountWordsLine2 = "";
+
+    // Break it roughly in half if it's too long, prioritizing the '/'
+    if (amountWordsBilingualFull.length > 60) {
+      const splitIdx = amountWordsBilingualFull.indexOf(' / ');
+      if (splitIdx !== -1) {
+        amountWordsLine1 = amountWordsBilingualFull.substring(0, splitIdx + 3);
+        amountWordsLine2 = amountWordsBilingualFull.substring(splitIdx + 3);
+      }
+    }
 
     const templatePath = path.join(__dirname, '../templates/shakhaTemplate.html');
     let htmlContent = fs.readFileSync(templatePath, 'utf8');
 
-    // Read and encode images in base64 so Puppeteer renders them reliably
-    const encodeImage = (filePath) => {
-        if (fs.existsSync(filePath)) {
-            const ext = path.extname(filePath).substring(1);
-            const base64Data = fs.readFileSync(filePath, 'base64');
-            return `data:image/${ext};base64,${base64Data}`;
-        }
-        return '';
-    };
+    // Load Base64 Images (Using user-specified .jpeg extensions)
+    const leftPhotoBase64 = getBase64Image('receipt3.jpeg'); // Older swami
+    const rightPhotoBase64 = getBase64Image('receipt2.jpeg'); // Younger swami
+    const bottomLogoBase64 = getBase64Image('receipt4.jpeg'); // Shiva Linga
 
-    const logoPath = path.join(__dirname, '../../frontend/src/assets/shivling.jpeg');
-    const swamijiPath = path.join(__dirname, '../../frontend/src/assets/kolekar_SP_1.jpeg');
-    const swamijiPath2 = path.join(__dirname, '../../frontend/src/assets/kolekar_SP_2.jpeg');
-    
-    const logoBase64 = encodeImage(logoPath);
-    const swamijiBase64 = encodeImage(swamijiPath);
-    let swamijiBase64_2 = encodeImage(swamijiPath2);
-    if (!swamijiBase64_2) {
-        swamijiBase64_2 = swamijiBase64; // fallback
-    }
+    htmlContent = htmlContent.replace(/{{leftPhotoBase64}}/g, leftPhotoBase64);
+    htmlContent = htmlContent.replace(/{{rightPhotoBase64}}/g, rightPhotoBase64);
+    htmlContent = htmlContent.replace(/{{bottomLogoBase64}}/g, bottomLogoBase64);
 
+    // Replacements
     htmlContent = htmlContent.replace(/{{receiptNumber}}/g, receiptNo);
     htmlContent = htmlContent.replace(/{{date}}/g, dateStr);
-    htmlContent = htmlContent.replace(/{{donorName}}/g, bilingualName);
-    htmlContent = htmlContent.replace(/{{purpose}}/g, bilingualPurpose);
-    htmlContent = htmlContent.replace(/{{amountInWords1}}/g, amountInWords1);
-    htmlContent = htmlContent.replace(/{{amountInWords2}}/g, amountInWords2);
-    htmlContent = htmlContent.replace(/{{amount}}/g, amount);
-    htmlContent = htmlContent.replace(/{{branchName}}/g, branchName);
-    htmlContent = htmlContent.replace(/{{logoImage}}/g, logoBase64);
-    htmlContent = htmlContent.replace(/{{swamijiImage1}}/g, swamijiBase64);
-    htmlContent = htmlContent.replace(/{{swamijiImage2}}/g, swamijiBase64_2);
+    htmlContent = htmlContent.replace(/{{donorNameBilingual}}/g, donorNameBilingual);
+    htmlContent = htmlContent.replace(/{{addressBilingual}}/g, addressBilingual);
+    htmlContent = htmlContent.replace(/{{purposeBilingual}}/g, purposeBilingual);
+    htmlContent = htmlContent.replace(/{{amountWordsBilingualLine1}}/g, amountWordsLine1);
+    htmlContent = htmlContent.replace(/{{amountWordsBilingualLine2}}/g, amountWordsLine2);
+    htmlContent = htmlContent.replace(/{{amount}}/g, amount.toLocaleString("en-IN"));
 
-    const browser = await getBrowser();
+    browser = await puppeteer.launch({
+      headless: "new",
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
     
     const page = await browser.newPage();
     await page.emulateMediaType('print');
     
-    // Set viewport to the same size as the PDF layout for accurate rendering
-    await page.setViewport({ width: 520, height: 420, deviceScaleFactor: 2 });
-    await page.setContent(htmlContent, { waitUntil: 'load' });
+    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+    await new Promise(r => setTimeout(r, 500)); // Font load padding
 
     const pdfBuffer = await page.pdf({
-      width: '520px',
-      height: '420px',
+      format: 'A4', // Can adjust to A5 landscape if A4 is too big
+      landscape: true,
       printBackground: true,
       margin: { top: 0, right: 0, bottom: 0, left: 0 }
     });
 
-    await page.close();
-    return Buffer.from(pdfBuffer);
+    await browser.close();
+    return pdfBuffer;
   } catch (err) {
-    console.error("Error generating shakha pavti PDF:", err);
+    if (browser) await browser.close();
+    console.error("Error generating Shakha Pavti PDF:", err);
     throw err;
   }
 };

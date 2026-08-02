@@ -3,13 +3,15 @@ import { getMyAnnadaan, downloadAnnadaanReceipt, cancelAnnadaan } from '../../..
 import { RowSkeleton } from '../../../components/dashboard/LoadingSkeleton';
 import EmptyState from '../../../components/dashboard/EmptyState';
 import StatusBadge from '../../../components/dashboard/StatusBadge';
-import { FaCalendarAlt, FaClock, FaPhoneAlt, FaEnvelope, FaUtensils, FaInfoCircle, FaFileDownload, FaEye } from 'react-icons/fa';
+import { FaCalendarAlt, FaClock, FaPhoneAlt, FaEnvelope, FaUtensils, FaInfoCircle, FaFileDownload, FaEye, FaTimes, FaSpinner } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import { toast, Toaster } from 'react-hot-toast';
 
 export const MyAnnadaan = () => {
   const [loading, setLoading] = useState(true);
   const [annadaans, setAnnadaans] = useState([]);
+  const [viewReceiptModal, setViewReceiptModal] = useState(null);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState('');
 
   const fetchAnnadaan = async () => {
     try {
@@ -43,6 +45,32 @@ export const MyAnnadaan = () => {
       console.error("Failed to cancel seva:", err);
       toast.error(err.response?.data?.message || 'Failed to cancel seva', { id: 'cancel' });
     }
+  };
+
+  const handleViewReceipt = async (id) => {
+    try {
+      toast.loading('Opening receipt preview...', { id: 'receipt_view' });
+      const response = await downloadAnnadaanReceipt(id);
+      
+      if (!response.data) {
+        throw new Error('Failed to download receipt');
+      }
+      
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      setPdfBlobUrl(url);
+      setViewReceiptModal(id);
+      toast.dismiss('receipt_view');
+    } catch (error) {
+      console.error('Error viewing receipt:', error);
+      toast.error('Failed to view receipt', { id: 'receipt_view' });
+    }
+  };
+
+  const handleCloseModal = () => {
+    if (pdfBlobUrl) window.URL.revokeObjectURL(pdfBlobUrl);
+    setPdfBlobUrl('');
+    setViewReceiptModal(null);
   };
 
   const handleDownloadReceipt = async (id) => {
@@ -113,6 +141,14 @@ export const MyAnnadaan = () => {
       <td className="px-6 py-4 text-center">
         <div className="flex flex-wrap gap-2 justify-center">
           {(d.status === 'approved' || d.status === 'completed') && (
+            <>
+              <button 
+                onClick={() => handleViewReceipt(d._id)}
+                title="View Receipt"
+                className="inline-flex items-center justify-center p-2 rounded-full text-sky-600 bg-white border border-cream-dark/20 hover:bg-slate-50 shadow-sm transition-all transform hover:-translate-y-0.5"
+              >
+                <FaEye size={14} />
+              </button>
               <button 
                 onClick={() => handleDownloadReceipt(d._id)}
                 title="Download Receipt"
@@ -120,6 +156,7 @@ export const MyAnnadaan = () => {
               >
                 <FaFileDownload size={14} /> Receipt
               </button>
+            </>
           )}
 
           {(!d.status || d.status === 'pending') && (
@@ -261,6 +298,34 @@ export const MyAnnadaan = () => {
             </div>
           </div>
 
+        </div>
+      )}
+
+      {/* Receipt View Modal */}
+      {viewReceiptModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-cream-dark/20">
+            <div className="p-4 sm:p-5 border-b border-cream-dark/20 flex justify-between items-center bg-white/80">
+              <h2 className="text-lg sm:text-xl font-black text-caramel-deep flex flex-wrap items-center gap-2">
+                <span>Receipt Preview</span>
+                <span className="text-xs bg-orange-100 text-orange-700 px-2.5 py-0.5 rounded-full font-bold">{viewReceiptModal.substring(0,8)}</span>
+              </h2>
+              <button onClick={handleCloseModal} className="p-2 text-gray-400 hover:text-gray-800 rounded-full hover:bg-gray-200 transition">
+                <FaTimes size={20} />
+              </button>
+            </div>
+            <div className="p-3 sm:p-6 flex-grow overflow-hidden flex justify-center items-center bg-gray-100/50 min-h-[550px]">
+              {pdfBlobUrl ? (
+                <iframe
+                  src={pdfBlobUrl}
+                  className="w-full h-[580px] rounded-xl border border-gray-200 shadow-sm bg-white"
+                  title={`Receipt-${viewReceiptModal}`}
+                />
+              ) : (
+                <FaSpinner className="animate-spin text-4xl text-gray-400" />
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

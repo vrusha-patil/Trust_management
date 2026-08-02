@@ -390,9 +390,10 @@ exports.approveDonation = async (req, res) => {
     // Also sync/issue to ReceiptArchive for unified tracking
     try {
       const ReceiptArchive = require('../models/ReceiptArchive');
-      let cat = "Dengi Pavti";
-      if (donation.donationType === "jama_pavti") cat = "Jama Pavti";
-      if (donation.donationType === "shakha_pavti") cat = "Branch Pavti";
+      let cat = "Donation";
+        if (donation.donationType === "jama_pavti") cat = "Jama Pavti";
+        if (donation.donationType === "shakha_pavti") cat = "Branch Pavti";
+        if (donation.donationType === "dengi_pavti") cat = "Dengi Pavti";
 
       await ReceiptArchive.findOneAndUpdate(
         { receiptNumber: donation.receiptNumber },
@@ -634,6 +635,11 @@ exports.downloadReceipt = async (req, res) => {
       await donation.save().catch(e => console.warn("Timestamp save skipped:", e.message));
     }
 
+    let filenamePrefix = 'Donation_Receipt';
+    if (donation.donationType === 'shakha_pavti') filenamePrefix = 'Shakha_Receipt';
+    else if (donation.donationType === 'jama_pavti') filenamePrefix = 'Jama_Receipt';
+    else if (donation.category === 'Annadan' || (donation.receiptNumber && donation.receiptNumber.startsWith('ANN-'))) filenamePrefix = 'Annadaan_Receipt';
+
     // If Cloudinary URL is available, attempt to proxy fetch it to avoid 401 Unauthorized in browser
     if (donation.receiptPdfUrl && (donation.receiptPdfUrl.startsWith('http://') || donation.receiptPdfUrl.startsWith('https://'))) {
       if (req.query.json === 'true') {
@@ -645,7 +651,7 @@ exports.downloadReceipt = async (req, res) => {
         const cloudResponse = await axios.get(donation.receiptPdfUrl, { responseType: 'arraybuffer' });
         if (cloudResponse.status === 200 && cloudResponse.data) {
           res.setHeader("Content-Type", "application/pdf");
-          res.setHeader("Content-Disposition", `inline; filename=Donation_Receipt_${donation.receiptNumber || id}.pdf`);
+          res.setHeader("Content-Disposition", `inline; filename=${filenamePrefix}_${donation.receiptNumber || id}.pdf`);
           return res.send(Buffer.from(cloudResponse.data));
         }
       } catch (cloudFetchErr) {
@@ -674,7 +680,7 @@ exports.downloadReceipt = async (req, res) => {
     }
 
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `inline; filename=Donation_Receipt_${donation.receiptNumber || id}.pdf`);
+    res.setHeader("Content-Disposition", `inline; filename=${filenamePrefix}_${donation.receiptNumber || id}.pdf`);
     return res.send(pdfBuffer);
   } catch (err) {
     console.error("[donationController][ERROR] downloadReceipt:", err);

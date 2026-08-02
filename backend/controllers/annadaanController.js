@@ -119,14 +119,50 @@ const updateAnnadaan = async (req, res) => {
         const transliteratedName = await englishToMarathi(annadaan.name);
         const transliteratedPurpose = await englishToMarathi(`Annadaan - ${annadaan.annadaanType}`);
 
-        const pdfBuffer = await generateReceiptPdf({
+                const pdfBuffer = await generateReceiptPdf({
           donorName: transliteratedName,
           amount: "Annadaan Seva",
           purpose: transliteratedPurpose,
           transactionId: `ANN-${annadaan._id.toString().substring(0, 8).toUpperCase()}`,
           paymentMethod: "N/A",
           date: annadaan.date,
+          donationType: 'jama_pavti' // Force jama pavti for Annadaan if no other template suits it
         });
+
+        // Upload to Cloudinary
+        const { uploadToCloudinary } = require('../utils/cloudinaryHelper');
+        const uploadRes = await uploadToCloudinary(pdfBuffer, "receipts", { resourceType: "auto" });
+        if (uploadRes && uploadRes.url) {
+          annadaan.receiptPdfUrl = uploadRes.url;
+          annadaan.receiptPublicId = uploadRes.publicId;
+          await annadaan.save();
+
+          // Save to ReceiptArchive
+          try {
+            const ReceiptArchive = require('../models/ReceiptArchive');
+            await ReceiptArchive.findOneAndUpdate(
+              { receiptNumber: `ANN-${annadaan._id.toString().substring(0, 8).toUpperCase()}` },
+              {
+                receiptNumber: `ANN-${annadaan._id.toString().substring(0, 8).toUpperCase()}`,
+                category: 'Annadan',
+                referenceId: annadaan._id,
+                referenceModel: 'Annadaan',
+                dynamicData: {
+                  donorName: transliteratedName,
+                  annadaanType: annadaan.annadaanType,
+                  amount: "Annadaan Seva"
+                },
+                pdfUrl: uploadRes.url,
+                status: 'Generated',
+                generatedBy: req.user ? req.user._id : annadaan.userId,
+                generatedByModel: req.user && req.user.role ? req.user.role : 'Admin'
+              },
+              { upsert: true, new: true }
+            );
+          } catch (err) {
+            console.warn("ReceiptArchive sync error in Annadaan:", err.message);
+          }
+        }
 
         const emailHtml = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">

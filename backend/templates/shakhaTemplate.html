@@ -2,432 +2,333 @@
 <html lang="mr">
 <head>
   <meta charset="UTF-8">
-  <title>Shakha Pavati</title>
+  <title>Shakha Receipt</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Noto+Sans+Devanagari:wght@400;500;600;700;800;900&family=Noto+Serif+Devanagari:wght@400;500;600;700;800;900&display=swap');
-    
     @page {
-      size: 520px 420px;
+      size: A4 landscape;
       margin: 0;
     }
+    @import url('https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Marathi:ital@0;1&family=Mukta:wght@400;600;700;800&display=swap');
     
     body {
       margin: 0;
       padding: 0;
-      box-sizing: border-box;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-
-    .receipt-outer-container {
-      width: 520px;
-      height: 420px;
-      background-color: #F58220;
-      position: relative;
+      font-family: 'Mukta', 'Arial', sans-serif;
+      background-color: #3e3e3e; /* Darker outer bg for contrast */
+      width: 297mm;
+      height: 210mm; /* A4 Landscape, though the image might be A5. Using 100% relative for puppeteer */
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 14px;
+    }
+    
+    .receipt-container {
+      width: 270mm;
+      height: 190mm;
+      border: 8px solid #eb6c24; /* Orange outer border */
+      background-color: white;
+      padding: 15px;
+      position: relative;
       box-sizing: border-box;
-      font-family: 'Noto Sans Devanagari', sans-serif;
+      box-shadow: 0px 0px 10px rgba(0,0,0,0.5);
     }
 
-    .receipt-card-right {
-      width: 492px;
-      height: 392px;
-      background-color: #FFFFFF;
-      border: 1px solid #8B2D3B;
-      border-radius: 4px;
-      box-sizing: border-box;
-      position: relative;
+    /* Inner structure */
+    .top-section {
       display: flex;
-      flex-direction: column;
       justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 25px;
+    }
+
+    .photo-box {
+      width: 140px;
+      height: 180px;
+      border: 2px solid #8e1f2f;
+      border-radius: 8px;
       overflow: hidden;
+      box-shadow: 3px 3px 8px rgba(0,0,0,0.2);
     }
-
-    .header-quote {
-      font-family: 'Noto Sans Devanagari', sans-serif;
-      font-size: 9.5px;
-      font-weight: 700;
-      color: #222222;
-      text-align: center;
-      margin: 0;
-      line-height: 1.1;
-    }
-
-    .header-title {
-      font-family: 'Noto Serif Devanagari', serif;
-      font-weight: 800;
-      color: #D32F2F;
-      text-align: center;
-      margin: 0;
-    }
-
-    .header-address {
-      font-family: 'Noto Sans Devanagari', sans-serif;
-      font-size: 8px;
-      font-weight: 600;
-      color: #333333;
-      text-align: center;
-      line-height: 1.2;
-      margin: 0;
-    }
-
-    .trust-capsule {
-      background-color: #8B2D3B;
-      color: #FFFFFF;
-      font-size: 8.5px;
-      font-weight: 700;
-      border-radius: 50px;
-      padding: 4.5px 18px;
-      display: inline-block;
-      line-height: 1;
-    }
-
-    .swamiji-photo-frame {
-      width: 70px;
-      height: 92px;
-      border: 1px solid #8B2D3B;
-      border-radius: 4px;
-      overflow: hidden;
-      background-color: transparent;
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .swamiji-photo {
+    
+    .photo-box img {
       width: 100%;
       height: 100%;
       object-fit: cover;
     }
 
-    .ribbon-container {
-      height: 28px;
+    .header-center {
+      text-align: center;
+      flex-grow: 1;
+      padding-top: 10px;
+    }
+
+    .mantra {
+      font-size: 13pt;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    .title-main {
+      font-size: 24pt;
+      font-weight: 800;
+      color: #c92a2a;
+      margin-bottom: 8px;
+    }
+
+    .address {
+      font-size: 11pt;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 12px;
+    }
+
+    .trust-badge {
+      background-color: #8f2637;
+      color: white;
+      display: inline-block;
+      padding: 4px 20px;
+      border-radius: 20px;
+      font-size: 11pt;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .shakha-badge-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .badge-left {
+      background-color: #8f2637;
+      color: #ffc93c;
+      padding: 6px 20px;
+      font-size: 14pt;
+      font-weight: 800;
       position: relative;
-      width: 100%;
     }
-
-    .ribbon-label-pavti {
+    .badge-left::after {
+      content: "";
       position: absolute;
-      left: 12px;
       top: 0;
-      height: 28px;
-      display: flex;
-      align-items: center;
-      color: #D8B321;
-      font-family: 'Noto Sans Devanagari', sans-serif;
-      font-weight: 900;
-      font-size: 12.5px;
+      right: -15px;
+      border-bottom: 35px solid transparent;
+      border-left: 15px solid #8f2637;
     }
 
-    .ribbon-label-shakha {
-      position: absolute;
-      left: 92px;
-      top: 0;
-      height: 28px;
-      display: flex;
-      align-items: center;
-      font-family: 'Noto Sans Devanagari', sans-serif;
+    .badge-right {
+      border: 2px solid #8f2637;
+      border-left: none;
+      padding: 4px 20px 4px 30px;
+      font-size: 14pt;
       font-weight: 700;
-      font-size: 11px;
-      gap: 6px;
+      color: #333;
+    }
+    .badge-right .blue-text {
+      color: #1a5b8f;
     }
 
-    .handwritten-val-inline {
-      color: #1A365D;
-      font-family: 'Kalam', cursive;
+    .row-split {
+      display: flex;
+      justify-content: space-between;
+      margin: 40px 10px 40px 10px;
+    }
+
+    .receipt-info {
+      font-size: 16pt;
+      font-weight: 800;
+      color: #333;
+    }
+    
+    .receipt-info .red-text {
+      color: #c92a2a;
+    }
+
+    .receipt-info .blue-text {
+      color: #1a5b8f;
+      text-decoration: underline;
+    }
+
+    /* Form Fields */
+    .form-group {
+      display: flex;
+      align-items: flex-end;
+      margin: 25px 10px;
+    }
+
+    .label {
+      font-size: 16pt;
       font-weight: 700;
-      font-size: 12.5px;
-      margin-top: -1px;
+      color: #333;
+      white-space: nowrap;
     }
 
-    .metadata-row {
+    .value {
+      flex-grow: 1;
+      border-bottom: 1px solid #1a5b8f;
+      margin: 0 15px;
+      font-size: 17pt;
+      font-weight: 700;
+      color: #1a5b8f;
+      padding: 0 10px;
+      font-style: italic;
+    }
+    
+    .value-blue-thick {
+      border-bottom: 2px solid #1a5b8f;
+    }
+
+    /* Bottom Section */
+    .bottom-section {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0 14px;
-      font-size: 12px;
-      font-weight: 700;
-      margin-top: 4px;
+      margin: 40px 10px 10px 10px;
     }
 
-    .metadata-label {
-      color: #222222;
-      font-family: 'Noto Sans Devanagari', sans-serif;
-      font-weight: 700;
-    }
-
-    .metadata-value-red {
-      color: #D32F2F;
-      font-family: 'Noto Sans Devanagari', sans-serif;
-      font-weight: 800;
-      font-size: 13.5px;
-    }
-
-    .metadata-value-blue {
-      color: #1A365D;
-      font-family: 'Kalam', cursive;
-      font-weight: 700;
-      font-size: 13px;
-    }
-
-    .form-fields-container {
-      padding: 0 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-top: 4px;
-    }
-
-    .form-row {
-      display: flex;
-      align-items: flex-end;
-      position: relative;
-      height: 24px;
-      width: 100%;
-    }
-
-    .form-label {
-      color: #222222;
-      font-family: 'Noto Sans Devanagari', sans-serif;
-      font-size: 12px;
-      font-weight: 700;
-      white-space: nowrap;
-      margin-bottom: 2px;
-    }
-
-    .form-line {
-      flex-grow: 1;
-      border-bottom: 0.75px solid #5B7590;
-      margin-left: 6px;
-      position: relative;
-      height: 100%;
-      display: flex;
-      align-items: flex-end;
-    }
-
-    .form-line-double {
-      flex-grow: 1;
-      border-bottom: 0.75px solid #5B7590;
-      margin-left: 6px;
-      margin-right: 6px;
-      position: relative;
-      height: 100%;
-      display: flex;
-      align-items: flex-end;
-    }
-
-    .form-line-prefix-fill {
-      flex-grow: 1;
-      border-bottom: 0.75px solid #5B7590;
-      position: relative;
-      height: 100%;
-      display: flex;
-      align-items: flex-end;
-    }
-
-    .handwritten-val {
-      color: #1A365D;
-      font-family: 'Kalam', cursive;
-      font-weight: 700;
-      font-size: 14.5px;
-      white-space: nowrap;
-      position: absolute;
-      left: 4px;
-      bottom: -1px;
-    }
-
-    .amount-box-container {
+    .amount-box-wrapper {
       display: flex;
       align-items: center;
     }
 
-    .amount-diamond {
-      width: 18px;
-      height: 18px;
-      background-color: #D32F2F;
-      color: #FFFFFF;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transform: rotate(45deg);
-      flex-shrink: 0;
-    }
-
-    .amount-diamond-symbol {
-      transform: rotate(-45deg);
-      font-size: 11px;
-      font-weight: 700;
-      margin-bottom: 0.5px;
-      margin-right: 0.5px;
-    }
-
-    .amount-rect {
-      border: 1px solid #8B2D3B;
-      border-radius: 15px;
-      background-color: #FFFFFF;
+    .rupee-diamond {
+      background-color: #c92a2a;
+      color: white;
+      width: 30px;
       height: 30px;
-      padding: 0 14px;
       display: flex;
-      align-items: center;
       justify-content: center;
-      font-family: 'Kalam', cursive;
-      font-weight: 700;
-      font-size: 14px;
-      color: #1A365D;
-      margin-left: 8px;
-      min-width: 90px;
-      box-sizing: border-box;
+      align-items: center;
+      font-weight: bold;
+      transform: rotate(45deg);
+      margin-right: -15px;
+      z-index: 10;
+    }
+    
+    .rupee-diamond span {
+      transform: rotate(-45deg);
     }
 
-    .thankyou-container {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      justify-content: center;
-      flex-grow: 1;
-      padding-bottom: 2px;
+    .amount-box {
+      border: 2px solid #8f2637;
+      border-radius: 25px;
+      padding: 8px 30px 8px 40px;
+      font-size: 18pt;
+      font-weight: 800;
+      color: #1a5b8f;
+      background-color: white;
     }
 
-    .thankyou-logo {
-      width: 44px;
-      height: 28px;
-      object-fit: contain;
+    .center-logo-area {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .logo-circle {
+      width: 70px;
+      height: 70px;
       border-radius: 50%;
-      border: 0.5px solid #E2E8F0;
-      background-color: #FFFFFF;
+      border: 2px solid #ddd;
+      overflow: hidden;
+    }
+    
+    .logo-circle img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    
+    .thank-you {
+      font-size: 20pt;
+      font-weight: 800;
+      color: #c92a2a;
+      font-style: italic;
     }
 
-    .thankyou-text {
-      font-family: 'Kalam', cursive;
+    .signature-area {
+      font-size: 12pt;
       font-weight: 700;
-      font-size: 16px;
-      color: #D32F2F;
-      font-style: normal;
-    }
-
-    .signature-text {
-      font-family: 'Noto Sans Devanagari', sans-serif;
-      font-size: 9.5px;
-      font-weight: 700;
-      color: #222222;
-      text-align: right;
-      flex-shrink: 0;
+      color: #333;
+      padding-top: 25px;
     }
   </style>
 </head>
 <body>
-  <div class="receipt-outer-container">
-    <div class="receipt-card-right">
-      <!-- Top Header Row with Swamiji Photos -->
-      <div style="padding: 8px 14px 0 14px; display: flex; justify-content: space-between; align-items: center; width: 100%; box-sizing: border-box;">
-        <!-- Left Swamiji -->
-        <div class="swamiji-photo-frame">
-          <img src="{{swamijiImage1}}" alt="Guru Swamiji" class="swamiji-photo" onerror="this.style.display='none'">
-        </div>
-
-        <!-- Middle Header Text -->
-        <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; padding: 0 8px; width: 320px; box-sizing: border-box;">
-          <div class="header-quote">।। धर्माने विश्वाला शांती मिळते ।।</div>
-          <div class="header-title" style="font-size: 15.5px; margin-top: 4.5px; letter-spacing: -0.3px; line-height: 1.2;">
-            श्री गुरुमूर्ती रुद्रपशुपती लिंगायत मठ संस्थान
-          </div>
-          <div class="header-address" style="margin-top: 4.5px; font-size: 7.8px; line-height: 1.2;">
-            पत्रव्यवहार पत्ता : श्री गुरुमूर्ती रुद्रपशुपती मठ, मु.पो. कोळे ता.सांगोला, जि.सोलापूर ४१३३१४
-          </div>
-          <div style="margin-top: 4px; text-align: center; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-            <span class="trust-capsule">ट्रस्ट नं.: ए/१७५०</span>
-            
-            <div class="ribbon-container" style="margin-top: 3px; height: 24px; width: 260px; position: relative;">
-              <svg width="260" height="24" viewBox="0 0 260 24" preserveAspectRatio="none" style="display: block;">
-                <path d="M 0,0 L 80,0 L 70,24 L 0,24 Z" fill="#8B2D3B" />
-                <path d="M 83,0 L 260,0 L 260,24 L 73,24 Z" fill="#EEEEEE" stroke="#8B2D3B" stroke-width="0.75" />
-              </svg>
-              <div style="position: absolute; left: 0px; top: 0px; width: 73px; height: 24px; display: flex; align-items: center; justify-content: center; color: #D8B321; font-family: 'Noto Sans Devanagari', sans-serif; font-weight: 900; font-size: 10px;">
-                पावती
-              </div>
-              <div style="position: absolute; left: 82px; top: 0px; height: 24px; display: flex; align-items: center; font-family: 'Noto Sans Devanagari', sans-serif; font-weight: 700; font-size: 9px; gap: 3px;">
-                <span style="color: #8B2D3B;">शाखा मठ -</span>
-                <span style="color: #1A365D; font-family: 'Kalam', cursive; font-weight: 700; font-size: 10.5px; margin-top: -1px;">{{branchName}}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right Swamiji -->
-        <div class="swamiji-photo-frame">
-          <img src="{{swamijiImage2}}" alt="Current Swamiji" class="swamiji-photo" onerror="this.style.display='none'">
-        </div>
+  <div class="receipt-container">
+    <div class="top-section">
+      <div class="photo-box">
+        <img src="{{leftPhotoBase64}}" alt="Left Swamiji">
       </div>
-
-      <!-- Metadata Row -->
-      <div class="metadata-row" style="padding: 0 20px; margin-top: 20px;">
-        <div>
-          <span class="metadata-label">पावती क्र. </span>
-          <span class="metadata-value-red" style="font-size: 14px;">{{receiptNumber}}</span>
-        </div>
-        <div style="display: flex; align-items: flex-end;">
-          <span class="metadata-label">दिनांक : </span>
-          <span class="metadata-value-blue" style="border-bottom: 0.75px solid #5B7590; min-width: 80px; display: inline-block; text-align: center; line-height: 1.2; font-size: 13px;">
-            {{date}}
-          </span>
-        </div>
-      </div>
-
-      <!-- Form Fields Area -->
-      <div class="form-fields-container" style="padding: 0 20px; gap: 8px;">
-        <div class="form-row">
-          <span class="form-label">श्री/सौ/श्रीमती</span>
-          <div class="form-line" style="margin-left: 14px;">
-            <span class="handwritten-val" style="left: 6px;">{{donorName}}</span>
-          </div>
-        </div>
+      
+      <div class="header-center">
+        <div class="mantra">।। धर्माने विश्वाला शांती मिळते ।।</div>
+        <div class="title-main">श्री गुरुमूर्ती रुद्रपशुपती लिंगायत मठ संस्थान</div>
+        <div class="address">पत्रव्यवहार पत्ता : श्री गुरुमूर्ती रुद्रपशुपती मठ, मु.पो. कोळे ता.सांगोला, जि.सोलापूर ४१३३१४</div>
+        <div class="trust-badge">ट्रस्ट नं.: ए/१७५०</div>
         
-        <div class="form-row">
-          <span class="form-label">आपणाकडून आज रोजी</span>
-          <div class="form-line-double">
-            <span class="handwritten-val">{{purpose}}</span>
-          </div>
-          <span class="form-label">यासाठी</span>
-        </div>
-
-        <div class="form-row">
-          <span class="form-label">अक्षरी रुपये</span>
-          <div class="form-line">
-            <span class="handwritten-val" style="font-size: 13.5px;">{{amountInWords1}}</span>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-line-prefix-fill">
-            <span class="handwritten-val" style="left: 0px; font-size: 13.5px;">{{amountInWords2}}</span>
-          </div>
-          <span class="form-label" style="margin-left: 6px;">आज रोख मिळाले.</span>
+        <div class="shakha-badge-row">
+          <div class="badge-left">पावती</div>
+          <div class="badge-right">शाखा मठ - <span class="blue-text">कोळे</span></div>
         </div>
       </div>
 
-      <!-- Bottom Area -->
-      <div style="padding: 0 20px 10px 20px; display: flex; justify-content: space-between; align-items: flex-end; box-sizing: border-box;">
-        <div class="amount-box-container">
-          <div class="amount-diamond">
-            <span class="amount-diamond-symbol">₹</span>
-          </div>
-          <div class="amount-rect" style="min-width: 115px; height: 30px; font-size: 14.5px;">
-            ₹ {{amount}}
-          </div>
-        </div>
-        
-        <div class="thankyou-container">
-          <img src="{{logoImage}}" alt="Shiva Linga" class="thankyou-logo" onerror="this.style.display='none'">
-          <span class="thankyou-text">धन्यवाद!</span>
-        </div>
+      <div class="photo-box">
+        <img src="{{rightPhotoBase64}}" alt="Right Swamiji">
+      </div>
+    </div>
 
-        <div class="signature-text" style="padding-bottom: 2px; font-size: 9.5px;">
-          देणगी स्वीकारणाराची सही
+    <div class="row-split">
+      <div class="receipt-info">
+        पावती क्र. <span class="red-text">{{receiptNumber}}</span>
+      </div>
+      <div class="receipt-info">
+        दिनांक : <span class="blue-text">{{date}}</span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="label">श्री/सौ/श्रीमती</div>
+      <div class="value value-blue-thick">{{donorNameBilingual}}</div>
+    </div>
+
+    <div class="form-group">
+      <div class="label">राहणार</div>
+      <div class="value value-blue-thick">{{addressBilingual}}</div>
+    </div>
+
+    <div class="form-group">
+      <div class="label">आपणाकडून आज रोजी</div>
+      <div class="value value-blue-thick">{{purposeBilingual}}</div>
+      <div class="label">यासाठी</div>
+    </div>
+
+    <div class="form-group">
+      <div class="label">अक्षरी रुपये</div>
+      <div class="value value-blue-thick">{{amountWordsBilingualLine1}}</div>
+    </div>
+    
+    <div class="form-group" style="margin-top: 10px;">
+      <div class="value value-blue-thick" style="margin-left: 0;">{{amountWordsBilingualLine2}}</div>
+      <div class="label">आज रोख मिळाले.</div>
+    </div>
+
+    <div class="bottom-section">
+      <div class="amount-box-wrapper">
+        <div class="rupee-diamond"><span>₹</span></div>
+        <div class="amount-box">₹ {{amount}}</div>
+      </div>
+      
+      <div class="center-logo-area">
+        <div class="logo-circle">
+          <img src="{{bottomLogoBase64}}" alt="Logo">
         </div>
+        <div class="thank-you">धन्यवाद!</div>
+      </div>
+
+      <div class="signature-area">
+        देणगी स्वीकारणाऱ्याची सही
       </div>
     </div>
   </div>

@@ -1,9 +1,28 @@
-const { getBrowser } = require('./browserManager');
+const puppeteer = require('puppeteer');
+const { transliterateToMarathi, translateToMarathi } = require('./translationService');
 const fs = require('fs');
 const path = require('path');
-const { transliterateToMarathi, translateToMarathi } = require('./translationService');
 
 // Helper to convert number to Marathi words
+function convertNumberToEnglishWords(amount) {
+  if (amount === 0) return "Zero";
+  
+  const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
+  const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+  function inWords (num) {
+      if ((num = num.toString()).length > 9) return 'overflow';
+      let n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+      if (!n) return; let str = '';
+      str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
+      str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
+      str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'Thousand ' : '';
+      str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
+      str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) : '';
+      return str.trim();
+  }
+  return inWords(amount) + " Rupees Only";
+}
 function convertNumberToMarathiWords(amount) {
   if (amount === 0) return "शून्य";
   
@@ -60,23 +79,6 @@ function convertNumberToMarathiWords(amount) {
   return words.trim() + " रुपये फक्त";
 }
 
-function convertNumberToEnglishWords(amount) {
-    if (amount === 0) return "Zero";
-    const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
-    const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-    
-    if (amount < 0) return '';
-    let n = ('000000000' + amount).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
-    if (!n) return ''; 
-    let str = '';
-    str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
-    str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
-    str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'Thousand ' : '';
-    str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
-    str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) : '';
-    return str.trim() + " Rupees Only";
-}
-
 exports.generateDengiPavtiPdf = async (rawDonation) => {
   let browser;
   try {
@@ -92,47 +94,48 @@ exports.generateDengiPavtiPdf = async (rawDonation) => {
       day: "2-digit", month: "2-digit", year: "numeric"
     });
     
-    const receiptNo = donation.receiptNumber || donation.donationReference || `DON-${Date.now().toString().slice(-6)}`;
-    
+        const receiptNo = donation.receiptNumber || donation.donationReference || donation.transactionId || `DON-${(donation._id || Date.now()).toString().slice(-6).toUpperCase()}`;
     const donorName = donation.donorName || donation.name || '';
-    const donorNameMarathi = donorName ? await transliterateToMarathi(donorName) : '';
-    const bilingualName = donorName && donorNameMarathi && donorName !== donorNameMarathi ? `${donorNameMarathi} / ${donorName}` : donorName;
-
     const address = donation.address || '';
-    const addressMarathi = address ? await transliterateToMarathi(address) : '';
-    const bilingualAddress = address && addressMarathi && address !== addressMarathi ? `${addressMarathi} / ${address}` : address;
+    const purpose = donation.message || donation.donationType || donation.category || 'Donation';
+    const amountVal = donation.amount ? donation.amount : 0;
+    const amount = amountVal.toLocaleString("en-IN");
+    
+    const donorNameMarathi = await transliterateToMarathi(donorName);
+    const addressMarathi = await transliterateToMarathi(address);
+    const purposeMarathi = await translateToMarathi(purpose);
+    const amountWordsEng = convertNumberToEnglishWords(amountVal);
+    const amountWordsMar = convertNumberToMarathiWords(amountVal);
 
-    const amount = donation.amount ? donation.amount.toLocaleString("en-IN") : "0";
-    const amountMarathi = convertNumberToMarathiWords(donation.amount || 0);
-    const amountEnglish = convertNumberToEnglishWords(donation.amount || 0);
-    const bilingualAmountWords = `${amountMarathi} / ${amountEnglish}`;
+    const donorNameBilingual = `${donorName} / ${donorNameMarathi}`;
+    const addressBilingual = `${address} / ${addressMarathi}`;
+    const purposeBilingual = `${purpose} / ${purposeMarathi}`;
+    const amountInWordsBilingual = `${amountWordsEng} / ${amountWordsMar}`;
 
     const templatePath = path.join(__dirname, '../templates/donationTemplate.html');
     let htmlContent = fs.readFileSync(templatePath, 'utf8');
 
-    const encodeImage = (filePath) => {
-      if (fs.existsSync(filePath)) {
-        const ext = path.extname(filePath).substring(1);
-        const base64Data = fs.readFileSync(filePath, 'base64');
-        return `data:image/${ext};base64,${base64Data}`;
-      }
-      return '';
-    };
-
     htmlContent = htmlContent.replace(/{{receiptNumber}}/g, receiptNo);
     htmlContent = htmlContent.replace(/{{date}}/g, dateStr);
-    htmlContent = htmlContent.replace(/{{donorName}}/g, bilingualName);
-    htmlContent = htmlContent.replace(/{{address}}/g, bilingualAddress);
-    htmlContent = htmlContent.replace(/{{amountInWords}}/g, bilingualAmountWords);
+    htmlContent = htmlContent.replace(/{{donorName}}/g, donorNameBilingual);
+    htmlContent = htmlContent.replace(/{{address}}/g, addressBilingual);
+    htmlContent = htmlContent.replace(/{{purpose}}/g, purposeBilingual);
+    htmlContent = htmlContent.replace(/{{amountInWords}}/g, amountInWordsBilingual);
     htmlContent = htmlContent.replace(/{{amount}}/g, amount);
 
-    const browser = await getBrowser();
+    browser = await puppeteer.launch({
+      headless: "new",
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
     
     const page = await browser.newPage();
     await page.emulateMediaType('print');
     
-    // Set content and wait for load to be fast
-    await page.setContent(htmlContent, { waitUntil: 'load' });
+    // Set content and wait for network idle to ensure fonts are loaded
+    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+    
+    // Add a tiny delay just to be absolutely sure web fonts apply
+    await new Promise(r => setTimeout(r, 500));
 
     const pdfBuffer = await page.pdf({
       format: 'A5',
@@ -141,10 +144,11 @@ exports.generateDengiPavtiPdf = async (rawDonation) => {
       margin: { top: 0, right: 0, bottom: 0, left: 0 }
     });
 
-    await page.close();
-    return Buffer.from(pdfBuffer);
+    await browser.close();
+    return pdfBuffer;
   } catch (err) {
-    console.error("Error generating dengi pavti PDF:", err);
+    if (browser) await browser.close();
+    console.error("Error generating receipt PDF:", err);
     throw err;
   }
 };

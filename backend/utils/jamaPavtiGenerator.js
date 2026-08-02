@@ -89,7 +89,7 @@ exports.drawJamaPavti = (ctx) => {
     }
   };
 
-  const purpose = donation.message || donation.annadaanType || "देणगी / Donation";
+  const purpose = donation.purpose || donation.message || donation.annadaanType || "देणगी / Donation";
   let paymentModeStr = "रोख";
   if (donation.utrNumber) {
     paymentModeStr = `UPI (UTR: ${donation.utrNumber})`;
