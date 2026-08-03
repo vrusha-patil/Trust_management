@@ -29,6 +29,8 @@ services:
         sync: false
       - key: DEEPGRAM_API_KEY
         sync: false
+      - key: FRONTEND_URL
+        value: https://trust-management.onrender.com
 
   # Frontend Static Site Service
   - type: web
@@ -45,4 +47,4 @@ services:
       - key: VITE_RAZORPAY_KEY_ID
         sync: false
       - key: VITE_API_URL
-        value: https://trust-backend.onrender.com/api
+        value: https://trust-management.onrender.com/api
