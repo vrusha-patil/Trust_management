@@ -13,7 +13,13 @@ const getBrowser = async () => {
   if (!browserInstance || !browserInstance.isConnected()) {
     const launchOptions = {
       headless: "new",
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: [
+        '--no-sandbox', 
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-zygote'
+      ]
     };
     if (process.platform === 'win32') {
       const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';

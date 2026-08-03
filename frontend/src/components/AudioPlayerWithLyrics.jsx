@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FaPlay, FaPause, FaVolumeUp, FaVolumeMute, FaYoutube, FaMusic } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../utils/api';
+import ReactPlayer from 'react-player';
 
 const getAudioUrl = (rawUrl) => {
   if (!rawUrl || typeof rawUrl !== 'string') return '';
@@ -32,6 +33,7 @@ const AudioPlayerWithLyrics = () => {
   const [loading, setLoading] = useState(true);
   
   const audioRef = useRef(null);
+  const youtubeRef = useRef(null);
   const lyricsContainerRef = useRef(null);
   const activeLyricRef = useRef(null);
 
@@ -96,20 +98,26 @@ const AudioPlayerWithLyrics = () => {
     }
   };
 
+  const isYoutubeTrack = Boolean(track && extractYoutubeId(track.audioUrl || track.originalYoutubeUrl));
+
   const togglePlay = () => {
-    if (!audioRef.current) return;
-    if (isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
+    if (isYoutubeTrack) {
+      setIsPlaying(!isPlaying);
     } else {
-      const playPromise = audioRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => setIsPlaying(true))
-          .catch((err) => {
-            console.warn("Audio play prevented:", err.message);
-            setIsPlaying(false);
-          });
+      if (!audioRef.current) return;
+      if (isPlaying) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        const playPromise = audioRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => setIsPlaying(true))
+            .catch((err) => {
+              console.warn("Audio play prevented:", err.message);
+              setIsPlaying(false);
+            });
+        }
       }
     }
   };
@@ -118,7 +126,16 @@ const AudioPlayerWithLyrics = () => {
     if (!audioRef.current) return;
     const time = audioRef.current.currentTime;
     setCurrentTime(time);
+    syncLyrics(time);
+  };
 
+  const handleYoutubeProgress = (state) => {
+    const time = state.playedSeconds;
+    setCurrentTime(time);
+    syncLyrics(time);
+  };
+
+  const syncLyrics = (time) => {
     const index = lyrics.findIndex(lyric => time >= lyric.start && time <= lyric.end);
     if (index !== -1 && index !== activeLyricIndex) {
       setActiveLyricIndex(index);
@@ -135,8 +152,10 @@ const AudioPlayerWithLyrics = () => {
 
   const handleSeek = (e) => {
     const time = parseFloat(e.target.value);
-    if (audioRef.current) {
-      audioRef.current.currentTime = time;
+    if (isYoutubeTrack) {
+      if (youtubeRef.current) youtubeRef.current.seekTo(time, 'seconds');
+    } else {
+      if (audioRef.current) audioRef.current.currentTime = time;
     }
     setCurrentTime(time);
   };
@@ -153,7 +172,8 @@ const AudioPlayerWithLyrics = () => {
 
   const audioSrc = getAudioUrl(track.audioUrl);
   const youtubeId = extractYoutubeId(track.audioUrl || track.originalYoutubeUrl);
-  const isYoutubeTrack = Boolean(youtubeId) || (track.sourceType === 'youtube' && !audioSrc.includes('cloudinary.com'));
+  const youtubeUrl = youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : '';
+  const thumbSrc = track.thumbnailUrl ? getAudioUrl(track.thumbnailUrl) : null;
 
   return (
     <div className="w-full max-w-5xl mx-auto my-6 md:my-12 bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl shadow-xl overflow-hidden flex flex-col-reverse md:flex-row relative border border-orange-100">
@@ -161,11 +181,24 @@ const AudioPlayerWithLyrics = () => {
       <div className="absolute top-0 right-0 w-64 h-64 bg-orange-300 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob"></div>
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-300 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob animation-delay-2000"></div>
 
-      {isYoutubeTrack && youtubeId ? (
+      {isYoutubeTrack && lyrics.length > 0 && (
         <div className="hidden">
-          <audio ref={audioRef} />
+          <ReactPlayer
+            ref={youtubeRef}
+            url={youtubeUrl}
+            playing={isPlaying}
+            volume={isMuted ? 0 : 1}
+            onProgress={handleYoutubeProgress}
+            onDuration={(d) => setDuration(d)}
+            onEnded={() => setIsPlaying(false)}
+            width="0"
+            height="0"
+            config={{ youtube: { playerVars: { showinfo: 0, rel: 0, origin: window.location.origin } } }}
+          />
         </div>
-      ) : (
+      )}
+
+      {!isYoutubeTrack && (
         <audio 
           ref={audioRef}
           src={audioSrc}
@@ -185,7 +218,7 @@ const AudioPlayerWithLyrics = () => {
         
         <div className="mb-6 md:mb-8 text-center md:text-left">
           <h3 className="text-orange-600 text-[10px] md:text-sm font-bold tracking-wider uppercase mb-2 flex items-center justify-center md:justify-start">
-             {track.sourceType === 'youtube' && <FaYoutube className="mr-2" />}
+             {isYoutubeTrack && <FaYoutube className="mr-2" />}
              Daily {track.language} Audio
           </h3>
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-mahakal-burgundy mb-2 leading-tight">{track.title}</h2>
@@ -258,7 +291,12 @@ const AudioPlayerWithLyrics = () => {
                     : 'text-lg sm:text-xl md:text-2xl font-bold text-gray-400 cursor-pointer hover:text-orange-500'
                 }`}
                 onClick={() => {
-                  audioRef.current.currentTime = lyric.start;
+                  if (isYoutubeTrack) {
+                    if (youtubeRef.current) youtubeRef.current.seekTo(lyric.start, 'seconds');
+                  } else {
+                    if (audioRef.current) audioRef.current.currentTime = lyric.start;
+                  }
+                  setCurrentTime(lyric.start);
                   if (!isPlaying) togglePlay();
                 }}
               >
@@ -266,20 +304,27 @@ const AudioPlayerWithLyrics = () => {
               </motion.div>
             ))}
           </div>
-        ) : isYoutubeTrack && youtubeId ? (
-          <div className="w-full h-full overflow-hidden bg-black flex items-center justify-center border-b md:border-b-0 md:border-l border-orange-100 min-h-[250px]">
-            <iframe
-              src={`https://www.youtube-nocookie.com/embed/${youtubeId}?rel=0`}
-              title={track.title}
-              className="w-full h-full min-h-[250px] border-0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            ></iframe>
+        ) : isYoutubeTrack ? (
+          <div className="w-full h-full overflow-hidden bg-black flex items-center justify-center border-b md:border-b-0 md:border-l border-orange-100 min-h-[250px] relative pointer-events-none">
+            <ReactPlayer
+              ref={youtubeRef}
+              url={youtubeUrl}
+              playing={isPlaying}
+              volume={isMuted ? 0 : 1}
+              onProgress={handleYoutubeProgress}
+              onDuration={(d) => setDuration(d)}
+              onEnded={() => setIsPlaying(false)}
+              width="100%"
+              height="100%"
+              controls={false}
+              style={{ minHeight: '250px' }}
+              config={{ youtube: { playerVars: { showinfo: 0, rel: 0, origin: window.location.origin, disablekb: 1 } } }}
+            />
           </div>
-        ) : track.thumbnailUrl ? (
+        ) : thumbSrc ? (
           <div className="w-full h-full overflow-hidden group bg-stone-50 flex items-center justify-center border-b md:border-b-0 md:border-l border-orange-100">
              <img 
-               src={track.thumbnailUrl} 
+               src={thumbSrc} 
                alt={track.title} 
                className="w-full h-auto md:h-full md:object-cover lg:object-contain object-cover max-h-[250px] sm:max-h-[300px] md:max-h-none group-hover:scale-105 transition-transform duration-700" 
              />

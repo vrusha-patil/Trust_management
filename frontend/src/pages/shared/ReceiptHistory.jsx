@@ -368,8 +368,8 @@ const ReceiptHistory = ({ defaultCategory = 'All', hideTitle = false, hideCatego
 
       {/* Receipt View Modal */}
       {viewReceiptModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-gray-100">
+        <div className="fixed inset-0 z-[9999] flex items-start justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6 pt-24 sm:pt-32 pb-12 overflow-y-auto">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl m-auto flex flex-col overflow-hidden border border-gray-100">
             <div className="p-4 sm:p-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center bg-gray-50/80 gap-3">
               <div>
                 <h2 className="text-lg sm:text-xl font-black text-gray-900 flex flex-wrap items-center gap-2">

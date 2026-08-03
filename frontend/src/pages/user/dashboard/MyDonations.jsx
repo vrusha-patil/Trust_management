@@ -403,15 +403,15 @@ export const MyDonations = () => {
 
       {/* Receipt View Modal */}
       {viewReceiptModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-gray-100">
-            <div className="p-4 sm:p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/80">
+        <div className="fixed inset-0 z-[9999] flex items-start justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6 pt-24 sm:pt-32 pb-12 overflow-y-auto">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl m-auto flex flex-col overflow-hidden border border-gray-100">
+            <div className="p-4 sm:p-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center bg-gray-50/80 gap-3">
               <h2 className="text-lg sm:text-xl font-black text-gray-900 flex flex-wrap items-center gap-2">
                 <span>Receipt Preview</span>
-                <span className="text-xs bg-red-100 text-red-700 px-2.5 py-0.5 rounded-full font-bold">{viewReceiptModal}</span>
+                <span className="text-xs bg-red-100 text-red-700 px-2.5 py-0.5 rounded-full font-bold truncate max-w-[150px]">{viewReceiptModal}</span>
               </h2>
-              <button onClick={handleCloseModal} className="p-2 text-gray-400 hover:text-gray-800 rounded-full hover:bg-gray-200 transition">
-                <FaTimes size={20} />
+              <button onClick={handleCloseModal} className="px-5 py-2 bg-slate-800 text-white text-sm font-bold rounded-xl hover:bg-slate-700 shadow-sm transition flex items-center gap-2 w-full sm:w-auto justify-center">
+                <FaTimes size={16} /> Close Preview
               </button>
             </div>
             <div className="p-3 sm:p-6 flex-grow overflow-hidden flex justify-center items-center bg-gray-100/50 min-h-[550px]">
