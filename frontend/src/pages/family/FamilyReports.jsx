@@ -157,22 +157,22 @@ const FamilyReports = () => {
     <div className="w-full space-y-8 pb-10 print:bg-white print:p-0">
       
       {/* Header */}
-      <div className="flex justify-between items-center print:hidden">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 lg:gap-0 print:hidden">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
             <FiFileText className="text-saffron-500" /> Vanshawal Report Generator
           </h1>
           <p className="text-slate-500 font-medium text-sm mt-1">Export, filter, and print customized lists of families, branches, and devotee registers.</p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={exportPDF} className="px-5 py-2.5 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl shadow-md transition-colors flex items-center gap-2">
-            <FiDownload /> Export PDF
+        <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
+          <button onClick={exportPDF} className="w-full sm:w-auto px-4 py-2.5 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl shadow-md transition-colors flex justify-center items-center gap-2">
+            <FiDownload className="shrink-0" /> Export PDF
           </button>
-          <button onClick={exportExcel} className="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow-md transition-colors flex items-center gap-2">
-            <FiDownload /> Export Excel
+          <button onClick={exportExcel} className="w-full sm:w-auto px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow-md transition-colors flex justify-center items-center gap-2">
+            <FiDownload className="shrink-0" /> Export Excel
           </button>
-          <button onClick={printReport} className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl shadow-sm transition-colors flex items-center gap-2">
-            <FiPrinter /> Print Friendly
+          <button onClick={printReport} className="w-full sm:w-auto px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl shadow-sm transition-colors flex justify-center items-center gap-2">
+            <FiPrinter className="shrink-0" /> Print
           </button>
         </div>
       </div>

@@ -586,30 +586,30 @@ const DevoteeVanshawal = () => {
                   />
                 </div>
 
-                <div className="flex gap-2">
+                <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 w-full sm:w-auto">
                   <button
                     onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
                     type="button"
-                    className={`px-5 py-3 rounded-xl text-xs font-black uppercase tracking-wider border flex items-center justify-center gap-2 transition-colors ${
+                    className={`col-span-1 px-3 sm:px-5 py-3 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider border flex items-center justify-center gap-1.5 transition-colors ${
                       isAdvancedOpen
                         ? "bg-saffron-50 border-saffron-300 text-saffron-700"
                         : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
                     }`}
                   >
-                    <FiFilter /> Advanced
-                  </button>
-                  <button
-                    onClick={handleSearchSubmit}
-                    className="px-8 py-3 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-black shadow-md uppercase tracking-wider transition-colors"
-                  >
-                    Search
+                    <FiFilter className="shrink-0" /> <span className="truncate">Advanced</span>
                   </button>
                   <button
                     onClick={handleClearFilters}
                     type="button"
-                    className="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-black uppercase tracking-wider transition-colors"
+                    className="col-span-1 px-3 sm:px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-colors flex items-center justify-center truncate"
                   >
                     Clear
+                  </button>
+                  <button
+                    onClick={handleSearchSubmit}
+                    className="col-span-2 sm:col-span-1 px-8 py-3 bg-slate-900 hover:bg-black text-white rounded-xl text-[10px] sm:text-xs font-black shadow-md uppercase tracking-wider transition-colors flex items-center justify-center"
+                  >
+                    Search
                   </button>
                 </div>
               </div>

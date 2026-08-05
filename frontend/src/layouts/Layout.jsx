@@ -247,7 +247,6 @@ const Layout = ({ children, user }) => {
       { name: "Events", path: "/branch/events", icon: <FaCalendarAlt /> },
 
       { name: "News", path: "/branch/news", icon: <FaBullhorn /> },
-      { name: "Issue Notice", path: "/branch/notice-generator", icon: <FaFileAlt /> },
     ];
   } else if (user?.role === "Accountant") {
     navItems = [

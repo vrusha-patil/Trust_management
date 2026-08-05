@@ -72,6 +72,23 @@ const savePdfLocally = (pdfBuffer, fileName) => {
   });
 };
 
+const saveHtmlLocally = (htmlContent, fileName) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const uploadDir = path.join(__dirname, '../uploads/receipts');
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      const filePath = path.join(uploadDir, `${fileName}.html`);
+      fs.writeFileSync(filePath, htmlContent, 'utf8');
+      const baseUrl = process.env.BACKEND_URL || process.env.BASE_URL || 'https://aashram-project-1.onrender.com';
+      resolve(`${baseUrl}/uploads/receipts/${fileName}.html`);
+    } catch (err) {
+      reject(err);
+    }
+  });
+};
+
 /**
  * Renders the HTML template into a PDF using Puppeteer
  */
@@ -106,26 +123,32 @@ const generateReceiptPdf = async (templateName, data, receiptNumber) => {
   // Add backend base URL for absolute image paths if needed
   htmlContent = htmlContent.replace(/{{baseUrl}}/g, process.env.BACKEND_URL || process.env.BASE_URL || 'https://aashram-project-1.onrender.com');
 
-  const browser = await getBrowser();
-  
-  const page = await browser.newPage();
-  
-  // Emulate print media for exact sizing
-  await page.emulateMediaType('print');
-  await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+  let fileUrl;
+  try {
+    const browser = await getBrowser();
+    const page = await browser.newPage();
+    
+    // Emulate print media for exact sizing
+    await page.emulateMediaType('print');
+    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
 
-  // Generate PDF
-  const pdfBuffer = await page.pdf({
-    preferCSSPageSize: true,
-    printBackground: true,
-    margin: { top: 0, right: 0, bottom: 0, left: 0 } // No margins, let template handle it
-  });
+    // Generate PDF
+    const pdfBuffer = await page.pdf({
+      preferCSSPageSize: true,
+      printBackground: true,
+      margin: { top: 0, right: 0, bottom: 0, left: 0 } // No margins, let template handle it
+    });
 
-  await page.close();
+    await page.close();
 
-  // Save locally instead of Cloudinary to avoid 401 Unauthorized PDF restrictions
-  const pdfUrl = await savePdfLocally(pdfBuffer, receiptNumber);
-  return pdfUrl;
+    // Save locally instead of Cloudinary to avoid 401 Unauthorized PDF restrictions
+    fileUrl = await savePdfLocally(pdfBuffer, receiptNumber);
+  } catch (err) {
+    console.warn("Puppeteer failed to generate PDF. Saving as HTML fallback instead:", err.message);
+    fileUrl = await saveHtmlLocally(htmlContent, receiptNumber);
+  }
+
+  return fileUrl;
 };
 
 /**

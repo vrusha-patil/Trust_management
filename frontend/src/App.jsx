@@ -259,8 +259,8 @@ function AppRoutes() {
           <Route path="/trustee/vanshawal/dashboard" element={<RoleProtectedRoute allowedRoles={['Trustee']}><FamilyDashboard /></RoleProtectedRoute>} />
           <Route path="/trustee/vanshawal/reports" element={<RoleProtectedRoute allowedRoles={['Trustee']}><FamilyReports /></RoleProtectedRoute>} />
           <Route path="/trustee/contact-enquiries" element={<RoleProtectedRoute allowedRoles={['Trustee', 'Admin']}><TrusteeContactEnquiries /></RoleProtectedRoute>} />
-          <Route path="/trustee/notice-generator" element={<RoleProtectedRoute allowedRoles={['Trustee', 'Admin', 'BranchManager']}><NoticeGenerator /></RoleProtectedRoute>} />
-          <Route path="/trustee/issue-notice" element={<RoleProtectedRoute allowedRoles={['Trustee', 'Admin', 'BranchManager']}><NoticeGenerator /></RoleProtectedRoute>} />
+          <Route path="/trustee/notice-generator" element={<RoleProtectedRoute allowedRoles={['Trustee']}><NoticeGenerator /></RoleProtectedRoute>} />
+          <Route path="/trustee/issue-notice" element={<RoleProtectedRoute allowedRoles={['Trustee']}><NoticeGenerator /></RoleProtectedRoute>} />
           <Route path="/trustee/receipts" element={<RoleProtectedRoute allowedRoles={['Trustee', 'Admin']}><ReceiptHistory /></RoleProtectedRoute>} />
 
           {/* Branch Manager Protected Routes */}
@@ -276,8 +276,6 @@ function AppRoutes() {
           <Route path="/branch/vanshawal" element={<RoleProtectedRoute allowedRoles={['BranchManager']}><DevoteeVanshawal /></RoleProtectedRoute>} />
           <Route path="/branch/vanshawal/dashboard" element={<RoleProtectedRoute allowedRoles={['BranchManager']}><FamilyDashboard /></RoleProtectedRoute>} />
           <Route path="/branch/vanshawal/reports" element={<RoleProtectedRoute allowedRoles={['BranchManager']}><FamilyReports /></RoleProtectedRoute>} />
-          <Route path="/branch/notice-generator" element={<RoleProtectedRoute allowedRoles={['BranchManager', 'Trustee', 'Admin']}><NoticeGenerator /></RoleProtectedRoute>} />
-          <Route path="/branch/issue-notice" element={<RoleProtectedRoute allowedRoles={['BranchManager', 'Trustee', 'Admin']}><NoticeGenerator /></RoleProtectedRoute>} />
 
           {/* Devotee Protected Routes */}
           <Route path="/devotee/dashboard" element={<DevoteeLayout allowedRoles={['Devotee']}><DevoteeDashboardHome /></DevoteeLayout>} />
