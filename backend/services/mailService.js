@@ -45,6 +45,7 @@ const getTransporter = () => {
     connectionTimeout: 15_000,
     greetingTimeout:   15_000,
     socketTimeout:     15_000,
+    family: 4, // Force IPv4
     tls: {
       rejectUnauthorized: false
     }
