@@ -650,13 +650,18 @@ exports.downloadReceipt = async (req, res) => {
         const axios = require('axios');
         const cloudResponse = await axios.get(donation.receiptPdfUrl, { responseType: 'arraybuffer' });
         if (cloudResponse.status === 200 && cloudResponse.data) {
-          res.setHeader("Content-Type", "application/pdf");
-          res.setHeader("Content-Disposition", `inline; filename=${filenamePrefix}_${donation.receiptNumber || id}.pdf`);
+          const isHtml = donation.receiptPdfUrl.endsWith('.html') || (cloudResponse.headers['content-type'] && cloudResponse.headers['content-type'].includes('text/html'));
+          res.setHeader("Content-Type", isHtml ? "text/html" : "application/pdf");
+          res.setHeader("Content-Disposition", `inline; filename=${filenamePrefix}_${donation.receiptNumber || id}.${isHtml ? 'html' : 'pdf'}`);
           return res.send(Buffer.from(cloudResponse.data));
         }
       } catch (cloudFetchErr) {
-        console.warn("Direct Cloudinary PDF proxy fetch encountered issue/401, falling back to generator:", cloudFetchErr.message);
+        console.warn("Direct PDF proxy fetch encountered issue/401, falling back to generator:", cloudFetchErr.message);
       }
+    }
+
+    if (donation.category === 'Notice' || (donation.receiptNumber && donation.receiptNumber.startsWith('NOT-'))) {
+       return res.status(404).json({ success: false, message: "Notice document is unavailable. Please regenerate the notice." });
     }
 
     // Fallback: Generate receipt PDF dynamically based on donationType (jama_pavti, dengi_pavti, shakha_pavti)

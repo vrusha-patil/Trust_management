@@ -55,37 +55,29 @@ const generateNextReceiptNumber = async (prefix) => {
   return `${prefix}-${numStr}`;
 };
 
-const savePdfLocally = (pdfBuffer, fileName) => {
+const uploadToCloudinary = async (bufferOrString, fileName, format) => {
+  const cloudinaryInstance = await cloudinary.getCloudinary();
+  if (!cloudinaryInstance) {
+    throw new Error("Cloudinary is not configured");
+  }
+  
   return new Promise((resolve, reject) => {
-    try {
-      const uploadDir = path.join(__dirname, '../uploads/receipts');
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
+    const uploadStream = cloudinaryInstance.uploader.upload_stream(
+      {
+        folder: 'receipts',
+        public_id: fileName,
+        resource_type: format === 'pdf' ? 'image' : 'raw',
+        format: format
+      },
+      (error, result) => {
+        if (result) resolve(result.secure_url);
+        else reject(error);
       }
-      const filePath = path.join(uploadDir, `${fileName}.pdf`);
-      fs.writeFileSync(filePath, pdfBuffer);
-      const baseUrl = process.env.BACKEND_URL || process.env.BASE_URL || 'https://aashram-project-1.onrender.com';
-      resolve(`${baseUrl}/uploads/receipts/${fileName}.pdf`);
-    } catch (err) {
-      reject(err);
-    }
-  });
-};
-
-const saveHtmlLocally = (htmlContent, fileName) => {
-  return new Promise((resolve, reject) => {
-    try {
-      const uploadDir = path.join(__dirname, '../uploads/receipts');
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-      const filePath = path.join(uploadDir, `${fileName}.html`);
-      fs.writeFileSync(filePath, htmlContent, 'utf8');
-      const baseUrl = process.env.BACKEND_URL || process.env.BASE_URL || 'https://aashram-project-1.onrender.com';
-      resolve(`${baseUrl}/uploads/receipts/${fileName}.html`);
-    } catch (err) {
-      reject(err);
-    }
+    );
+    
+    // Convert string (HTML) to buffer if needed
+    const buffer = typeof bufferOrString === 'string' ? Buffer.from(bufferOrString, 'utf8') : bufferOrString;
+    uploadStream.end(buffer);
   });
 };
 
@@ -130,7 +122,7 @@ const generateReceiptPdf = async (templateName, data, receiptNumber) => {
     
     // Emulate print media for exact sizing
     await page.emulateMediaType('print');
-    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+    await page.setContent(htmlContent, { waitUntil: 'load', timeout: 30000 });
 
     // Generate PDF
     const pdfBuffer = await page.pdf({
@@ -141,11 +133,11 @@ const generateReceiptPdf = async (templateName, data, receiptNumber) => {
 
     await page.close();
 
-    // Save locally instead of Cloudinary to avoid 401 Unauthorized PDF restrictions
-    fileUrl = await savePdfLocally(pdfBuffer, receiptNumber);
+    // Save to Cloudinary
+    fileUrl = await uploadToCloudinary(pdfBuffer, receiptNumber, 'pdf');
   } catch (err) {
-    console.warn("Puppeteer failed to generate PDF. Saving as HTML fallback instead:", err.message);
-    fileUrl = await saveHtmlLocally(htmlContent, receiptNumber);
+    console.error("Puppeteer failed to generate PDF:", err);
+    throw new Error("Failed to generate PDF document: " + err.message);
   }
 
   return fileUrl;

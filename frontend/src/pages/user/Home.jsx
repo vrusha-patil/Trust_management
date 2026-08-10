@@ -229,8 +229,8 @@ const Home = () => {
             <h4 className="text-[#FF8C00] font-bold tracking-[0.3em] uppercase text-xs mb-4">{greeting}</h4>
 
             <h1 className="font-serif font-bold text-white mb-6 leading-[1.1] tracking-tight drop-shadow-lg">
-              The Divine Abode of <br className="hidden md:block" />
-              Kolekar Maharaj
+              {t('home.hero_title_1', 'The Spiritual Peetha of')} <br className="hidden md:block" />
+              {t('home.hero_title_2', 'Kolekar Maharaj')}
             </h1>
 
             <p className="text-base md:text-xl text-stone-200 font-light max-w-2xl mx-auto leading-relaxed mb-10 drop-shadow-md">
